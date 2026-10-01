@@ -2,7 +2,8 @@
 import urllib.request
 
 def main():
-    with urllib.request.urlopen("https://ip.me", timeout=10) as resp:
+    req = urllib.request.Request("https://ip.me", headers={"User-Agent": "curl/8.0"})
+    with urllib.request.urlopen(req, timeout=10) as resp:
         print(resp.read().decode().strip())
 
 if __name__ == "__main__":
