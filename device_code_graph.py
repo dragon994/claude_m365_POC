@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-"""Device code flow against the Microsoft Graph PowerShell app for mail scopes."""
+"""Device code flow for Microsoft Graph delegated mail scopes."""
+import argparse
 import sys
 import time
 import requests
 
-CLIENT_ID = "fb78d390-0c51-40cd-8e17-fdbfab77341b"
 AUTHORITY = "https://login.microsoftonline.com/common"
 DEVICE_CODE_ENDPOINT = f"{AUTHORITY}/oauth2/v2.0/devicecode"
 TOKEN_ENDPOINT = f"{AUTHORITY}/oauth2/v2.0/token"
@@ -23,8 +23,8 @@ DELEGATED_MAIL_SCOPES = [
 ]
 
 
-def start_device_code() -> dict:
-    data = {"client_id": CLIENT_ID, "scope": " ".join(DELEGATED_MAIL_SCOPES)}
+def start_device_code(client_id: str) -> dict:
+    data = {"client_id": client_id, "scope": " ".join(DELEGATED_MAIL_SCOPES)}
     resp = requests.post(DEVICE_CODE_ENDPOINT, data=data, timeout=30)
     if resp.status_code != 200:
         print(f"Device code request failed: HTTP {resp.status_code}")
@@ -33,10 +33,10 @@ def start_device_code() -> dict:
     return resp.json()
 
 
-def poll_for_token(device_code: str, interval: int, expires_in: int) -> dict:
+def poll_for_token(client_id: str, device_code: str, interval: int, expires_in: int) -> dict:
     data = {
         "grant_type": "urn:ietf:params:oauth:grant-type:device_code",
-        "client_id": CLIENT_ID,
+        "client_id": client_id,
         "device_code": device_code,
     }
     deadline = time.time() + expires_in
@@ -62,10 +62,14 @@ def poll_for_token(device_code: str, interval: int, expires_in: int) -> dict:
 
 
 def main() -> None:
-    print(f"Starting device code flow against Microsoft Graph PowerShell ({CLIENT_ID})")
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("client_id", help="Entra app (client) ID to run device code flow against")
+    args = parser.parse_args()
+
+    print(f"Starting device code flow (client_id={args.client_id})")
     print(f"Scopes: {' '.join(DELEGATED_MAIL_SCOPES)}\n")
 
-    dc = start_device_code()
+    dc = start_device_code(args.client_id)
     print("=" * 70)
     print(dc.get("message") or
           f"Go to {dc['verification_uri']} and enter the code: {dc['user_code']}")
@@ -77,7 +81,7 @@ def main() -> None:
     print("\nWaiting for sign-in to complete...\n")
     sys.stdout.flush()
 
-    token = poll_for_token(dc["device_code"], dc["interval"], dc["expires_in"])
+    token = poll_for_token(args.client_id, dc["device_code"], dc["interval"], dc["expires_in"])
 
     print("Token acquired.")
     print(f"  token_type:    {token.get('token_type')}")
