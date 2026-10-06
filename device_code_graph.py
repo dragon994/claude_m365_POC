@@ -4,7 +4,7 @@ import sys
 import time
 import requests
 
-CLIENT_ID = "d3590ed6-52b3-4102-aeff-aad2292ab01c"
+CLIENT_ID = "fb78d390-0c51-40cd-8e17-fdbfab77341b"
 AUTHORITY = "https://login.microsoftonline.com/common"
 DEVICE_CODE_ENDPOINT = f"{AUTHORITY}/oauth2/v2.0/devicecode"
 TOKEN_ENDPOINT = f"{AUTHORITY}/oauth2/v2.0/token"
