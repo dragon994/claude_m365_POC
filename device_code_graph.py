@@ -9,17 +9,21 @@ AUTHORITY = "https://login.microsoftonline.com/common"
 DEVICE_CODE_ENDPOINT = f"{AUTHORITY}/oauth2/v2.0/devicecode"
 TOKEN_ENDPOINT = f"{AUTHORITY}/oauth2/v2.0/token"
 
+# Application (client) ID used to run the device code flow.
+DEFAULT_CLIENT_ID = "9199bf20-a13f-4107-85dc-02114787ef48"
+
+# Resource (client) ID the access token is requested for.
+# 00000002-0000-0ff1-ce00-000000000000 = Office 365 Exchange Online
+# (outlook.office.com). The scopes below are already fully qualified with
+# this resource's URL prefix, so the resource is implied by the scope URIs.
+RESOURCE_CLIENT_ID = "00000002-0000-0ff1-ce00-000000000000"
+
+# The v2.0 endpoint rejects mixing individual resource scopes with .default
+# (AADSTS70011), so request the resource's .default scope alone. This grants
+# every delegated permission already configured/consented on the app
+# registration for the Office 365 Exchange Online resource.
 DELEGATED_MAIL_SCOPES = [
-    "offline_access",
-    "Mail.Read",
-    "Mail.ReadBasic",
-    "Mail.ReadWrite",
-    "Mail.Send",
-    "Mail.Read.Shared",
-    "Mail.ReadWrite.Shared",
-    "Mail.Send.Shared",
-    "MailboxSettings.Read",
-    "MailboxSettings.ReadWrite",
+    "https://outlook.office.com/.default",
 ]
 
 
@@ -63,10 +67,17 @@ def poll_for_token(client_id: str, device_code: str, interval: int, expires_in: 
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("client_id", help="Entra app (client) ID to run device code flow against")
+    parser.add_argument(
+        "client_id",
+        nargs="?",
+        default=DEFAULT_CLIENT_ID,
+        help="Entra app (client) ID to run device code flow against "
+             f"(default: {DEFAULT_CLIENT_ID})",
+    )
     args = parser.parse_args()
 
     print(f"Starting device code flow (client_id={args.client_id})")
+    print(f"Resource: {RESOURCE_CLIENT_ID}")
     print(f"Scopes: {' '.join(DELEGATED_MAIL_SCOPES)}\n")
 
     dc = start_device_code(args.client_id)
