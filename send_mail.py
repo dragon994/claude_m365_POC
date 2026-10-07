@@ -15,12 +15,12 @@ import urllib.request
 OUTLOOK_API = "https://outlook.office.com/api/v2.0"
 
 
-def send_mail(upn: str, token: str, subject: str, body: str) -> None:
+def send_mail(upn: str, token: str, subject: str, body: str, to: str) -> None:
     payload = {
         "Message": {
             "Subject": subject,
             "Body": {"ContentType": "Text", "Content": body},
-            "ToRecipients": [{"EmailAddress": {"Address": upn}}],
+            "ToRecipients": [{"EmailAddress": {"Address": to}}],
         },
         "SaveToSentItems": True,
     }
@@ -35,19 +35,21 @@ def send_mail(upn: str, token: str, subject: str, body: str) -> None:
     )
     with urllib.request.urlopen(req) as resp:
         # Success is 202 Accepted with an empty body
-        print(f"OK: HTTP {resp.status} - mail sent to {upn}")
+        print(f"OK: HTTP {resp.status} - mail sent from {upn} to {to}")
 
 
 def main() -> int:
     p = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     p.add_argument("upn", help="user principal name, e.g. user@contoso.com")
     p.add_argument("token", help="access token for https://outlook.office.com")
+    p.add_argument("--to", help="recipient address (defaults to upn)")
     p.add_argument("--subject", default="Test message")
     p.add_argument("--body", default="This is a test message sent to myself via the Outlook REST API.")
     args = p.parse_args()
 
+    to = args.to or args.upn
     try:
-        send_mail(args.upn, args.token, args.subject, args.body)
+        send_mail(args.upn, args.token, args.subject, args.body, to)
     except urllib.error.HTTPError as e:
         print(f"HTTP {e.code}: {e.read().decode(errors='replace')}", file=sys.stderr)
         return 1
